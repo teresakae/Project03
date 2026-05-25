@@ -1,6 +1,6 @@
 //
-//  MenuTestApp.swift
-//  MenuTest
+//  App.swift
+//  Project03
 //
 //  Created by Teresa Kae on 24/05/26.
 //
