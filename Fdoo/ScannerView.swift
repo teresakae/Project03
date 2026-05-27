@@ -5,16 +5,16 @@ import Translation
 enum DishCategory {
     case safe, recommended, caution, unsafe
 
-    var uiColor: UIColor {
+    var color: Color {
         switch self {
-        case .safe:        return UIColor(named: "StatusSafe")        ?? UIColor(red: 0.13, green: 0.78, blue: 0.37, alpha: 1)
-        case .recommended: return UIColor(named: "StatusRecommended") ?? UIColor(red: 0.10, green: 0.60, blue: 1.00, alpha: 1)
-        case .caution:     return UIColor(named: "StatusCaution")     ?? UIColor(red: 1.00, green: 0.58, blue: 0.00, alpha: 1)
-        case .unsafe:      return UIColor(named: "StatusUnsafe")      ?? UIColor(red: 1.00, green: 0.23, blue: 0.19, alpha: 1)
+        case .safe:        return .green
+        case .recommended: return .blue
+        case .caution:     return .orange
+        case .unsafe:      return .red
         }
     }
-
-    var color: Color { Color(uiColor: uiColor) }
+    
+    var uiColor: UIColor { UIColor(color) }
 
     var label: String {
         switch self {

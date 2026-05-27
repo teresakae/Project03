@@ -7,17 +7,17 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "E13AA3FA-F60A-4506-A951-49DF6F20E98F"
+            uuid = "BB3FB946-9213-4496-9352-607B98D4F1E3"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Fdoo/ScannerView.swift"
+            filePath = "Fdoo/TranslateView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "10"
-            endingLineNumber = "10"
-            landmarkName = "uiColor"
-            landmarkType = "24">
+            startingLineNumber = "9"
+            endingLineNumber = "9"
+            landmarkName = "TranslateView"
+            landmarkType = "14">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

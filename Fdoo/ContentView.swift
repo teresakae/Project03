@@ -79,13 +79,14 @@ struct ContentView: View {
                 DishCardView(dish: dish)
             }
             .sheet(isPresented: $showInfo) {
-                InfoPageView()
+                TranslateView()
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { showInfo = false }
                         }
                     }
             }
+            
             .sheet(isPresented: $showLanguage) {
                 LanguageView()
                     .toolbar {
