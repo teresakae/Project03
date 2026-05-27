@@ -1,146 +1,218 @@
-//
-//  MenuTestApp.swift
-//  MenuTest
-//
-//  Created by Teresa Kae on 24/05/26.
-//
-
 import SwiftUI
 import VisionKit
 
-struct ContentView: View {
-    @State private var isScannerSupported = false
-    @State private var tappedDish: DishItem? = nil
+private let kTopBarHeight:    CGFloat = 125
+private let kBottomBarHeight: CGFloat = 200
 
+struct ContentView: View {
+    @State private var isScannerSupported  = false
+    @State private var tappedDish: DishItem? = nil
+    @State private var showInfo            = false
+    @State private var showLanguage        = false
+    
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
+                
                 if isScannerSupported {
-                    ScannerView { dish in
-                        tappedDish = dish
-                    }
+                    ScannerView(
+                        topInset:    kTopBarHeight,
+                        bottomInset: kBottomBarHeight,
+                        onDishTapped: { tappedDish = $0 }
+                    )
                     .ignoresSafeArea()
                 } else {
                     Color.black.ignoresSafeArea()
                     Text("Camera not supported on this device")
                         .foregroundColor(.white)
                 }
-
+                
                 VStack {
                     HStack {
                         Text("Fdoo")
-                            .font(.title2.bold())
+                            .font(.title.bold())
                             .foregroundColor(.white)
                         Spacer()
-                        
                         NavigationLink(destination: PreferencesView()) {
-                            Image(systemName: "person.circle")
-                                .font(.title2)
+                            Image(systemName: "gear")
+                                .font(.title)
                                 .foregroundColor(.white)
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    .padding(.vertical, 12)
                     .background(
                         LinearGradient(
-                            colors: [.black.opacity(0.6), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            colors: [.black.opacity(0.72), .clear],
+                            startPoint: .top, endPoint: .bottom
                         )
+                        .ignoresSafeArea(edges: .top)
                     )
-
                     Spacer()
-                    // Language picker placeholder
-                    HStack(spacing: 16) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "sparkle")
-                                .font(.caption)
-                            Text("Detect Language")
-                                .font(.caption)
-                            Image(systemName: "arrow.left.arrow.right")
-                                .font(.caption)
-                            Text("Indonesia")
-                                .font(.caption)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(20)
-                        .foregroundColor(.white)
-                    }
-                    .padding(.bottom, 32)
                 }
+                
+                VStack(spacing: 0) {
+                    Button(action: { showLanguage = true }) {
+                        languagePickerPill
+                    }
+                    
+                    shutterRow
+                }
+                .background(Color.clear)
             }
             .navigationDestination(item: $tappedDish) { dish in
                 DishCardView(dish: dish)
             }
+            .sheet(isPresented: $showInfo) {
+                NavigationStack {
+                    InfoPageView()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showInfo = false }
+                            }
+                        }
+                }
+            }
+            .sheet(isPresented: $showLanguage) {
+                NavigationStack {
+                    LanguageView()
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showLanguage = false }
+                            }
+                        }
+                }
+            }
         }
         .onAppear {
             isScannerSupported = DataScannerViewController.isSupported
-                                 && DataScannerViewController.isAvailable
+            && DataScannerViewController.isAvailable
         }
+    }
+    
+    private var languagePickerPill: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "sparkle").font(.caption)
+            Text("Detect Language").font(.caption)
+            Image(systemName: "arrow.left.arrow.right").font(.caption)
+            Text("Indonesia").font(.caption)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial)
+        .cornerRadius(20)
+        .foregroundColor(.white)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+    }
+
+    private var shutterRow: some View {
+        ZStack(alignment: .center) {
+            Button(action: { }) {
+                LiquidGlassShutter()
+            }
+            .frame(width: 84, height: 84)
+
+            HStack {
+                InfoButton(action: { showInfo = true })
+                    .frame(width: 56, height: 56)
+                Spacer()
+            }
+            .padding(.horizontal, 52)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 84)
+        .padding(.bottom, 28)
     }
 }
 
-// Temporary dish card view
+struct LiquidGlassShutter: View {
+    @State private var pressed = false
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .overlay(Circle().strokeBorder(.white.opacity(0.88), lineWidth: 3.5))
+                .frame(width: 84, height: 84)
+                .shadow(color: .white.opacity(0.18), radius: 8)
+                
+            Circle()
+                .fill(.white)
+                .frame(width: 64, height: 64)
+        }
+        .scaleEffect(pressed ? 0.90 : 1.0)
+        .animation(.spring(response: 0.20, dampingFraction: 0.55), value: pressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in pressed = true }
+                .onEnded   { _ in pressed = false }
+        )
+    }
+}
+    
+struct InfoButton: View {
+    var action: () -> Void
+    @State private var pressed = false
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.ultraThinMaterial)
+                .overlay(Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1.5))
+                .frame(width: 54, height: 54)
+                
+            Image(systemName: "info.circle")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(.white)
+        }
+        .scaleEffect(pressed ? 0.88 : 1.0)
+        .animation(.spring(response: 0.20, dampingFraction: 0.55), value: pressed)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in pressed = true }
+                .onEnded   { _ in
+                    pressed = false
+                    action()
+                }
+        )
+    }
+}
+    
 struct DishCardView: View {
     let dish: DishItem
-
+    
     var body: some View {
-        VStack(spacing: 24) {
-            HStack {
-                Image(systemName: dish.category.iconName) // for Differentiate without color
-                Text(dish.category.label)
-            }
-            .font(.caption.bold())
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(dish.category.color.opacity(0.2))
-            .foregroundColor(dish.category.color)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(dish.category.color, lineWidth: 1)
-            )
-
-            Text(dish.name)
-                .font(.largeTitle.bold())
-                .multilineTextAlignment(.center)
-
-            VStack(alignment: .leading, spacing: 16) {
-                placeholderSection(title: "Description")
-                placeholderSection(title: "How to Eat")
-                placeholderSection(title: "Culture")
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(16)
-
-            Spacer()
-        }
-        .padding()
-        .navigationTitle(dish.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .accentColor(dish.category.color)
-    }
-
-    func placeholderSection(title: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.headline)
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color(.systemGray4))
-                .frame(height: 60)
-        }
+        dish.category.color
+            .ignoresSafeArea()
+            .navigationTitle(dish.name)
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
-
-// Placeholder settings page
+    
 struct PreferencesView: View {
     var body: some View {
-        Text("Preferences / Onboarding")
-            .font(.title2)
+        Text("Preference Settings")
+            .font(.title)
             .foregroundColor(.secondary)
             .navigationTitle("Preferences")
+    }
+}
+    
+struct InfoPageView: View {
+    var body: some View {
+        Color.clear
+            .navigationTitle("How to Say")
+            .navigationBarTitleDisplayMode(.inline)
+        Text("Info Screen")
+    }
+}
+    
+struct LanguageView: View {
+    var body: some View {
+        Color.clear
+            .navigationTitle("Language Picker")
+            .navigationBarTitleDisplayMode(.inline)
+        Text("Language Picker")
     }
 }

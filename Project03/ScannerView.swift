@@ -1,34 +1,21 @@
-//
-//  ScannerView.swift
-//  Project03
-//
-//  Created by Teresa Kae on 24/05/26.
-//
-
 import SwiftUI
 import VisionKit
 
 enum DishCategory {
     case safe, recommended, caution, unsafe
-    // SwiftUI (in ContentView)
-    var color: Color {
-        switch self {
-        case .safe:        return .statusSafe
-        case .recommended: return .statusRecommended
-        case .caution:     return .statusCaution
-        case .unsafe:      return .statusUnsafe
-        }
-    }
 
-    // UIKit (camera boxes in ScannerView)
     var uiColor: UIColor {
-        switch self {
-        case .safe:        return UIColor(named: "StatusSafe") ?? .systemGreen
-        case .recommended: return UIColor(named: "StatusRecommended") ?? .systemBlue
-        case .caution:     return UIColor(named: "StatusCaution") ?? .systemOrange
-        case .unsafe:      return UIColor(named: "StatusUnsafe") ?? .systemRed
+            switch self {
+            case .safe:        return UIColor(named: "StatusSafe")        ?? UIColor(red: 0.13, green: 0.78, blue: 0.37, alpha: 1)
+            case .recommended: return UIColor(named: "StatusRecommended") ?? UIColor(red: 0.10, green: 0.60, blue: 1.00, alpha: 1)
+            case .caution:     return UIColor(named: "StatusCaution")     ?? UIColor(red: 1.00, green: 0.58, blue: 0.00, alpha: 1)
+            case .unsafe:      return UIColor(named: "StatusUnsafe")      ?? UIColor(red: 1.00, green: 0.23, blue: 0.19, alpha: 1)
+            }
         }
-    }
+
+        var color: Color {
+            Color(uiColor: self.uiColor)
+        }
 
     var label: String {
         switch self {
@@ -38,8 +25,7 @@ enum DishCategory {
         case .unsafe:      return "Not Safe"
         }
     }
-    
-    // Differentiate without color
+
     var iconName: String {
         switch self {
         case .safe:        return "checkmark.circle.fill"
@@ -50,217 +36,298 @@ enum DishCategory {
     }
 }
 
-// Item model (open to changes)
 struct DishItem: Identifiable, Hashable {
     let id = UUID()
     let name: String
-    let frame: CGRect // X/Y coords and width/height of the text on the screen
+    let frame: CGRect
     let category: DishCategory
-    
-    static func == (lhs: DishItem, rhs: DishItem) -> Bool {
-        lhs.id == rhs.id // comparing identical objects
-    }
-    
-    // unique ID for memory tracking with hash values
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+
+    static func == (lhs: DishItem, rhs: DishItem) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+private extension UIFont {
+    static func sfRounded(size: CGFloat, weight: UIFont.Weight = .medium) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = base.fontDescriptor.withDesign(.rounded) else { return base }
+        return UIFont(descriptor: descriptor, size: size)
     }
 }
 
-// UIViewControllerRepresentable = "wrapper"; so UIKit's DataScannerViewController can be packaged and SwiftUI can use it.
 struct ScannerView: UIViewControllerRepresentable {
-    // tap in the UIKit code = pass DishItem back UP to SwiftUI ContentView.
+    var topInset:    CGFloat
+    var bottomInset: CGFloat
     var onDishTapped: (DishItem) -> Void
-    
-    // setup
+
     func makeUIViewController(context: Context) -> DataScannerViewController {
-        // initialize built-in Live Text camera scanner
         let scanner = DataScannerViewController(
             recognizedDataTypes: [.text(languages: ["id", "th", "vi", "en"])],
-            qualityLevel: .balanced,
+            qualityLevel: .fast,
             recognizesMultipleItems: true,
-            isHighFrameRateTrackingEnabled: true,
-            isHighlightingEnabled: false // we draw our own custom boxes
+            isHighFrameRateTrackingEnabled: false,
+            isHighlightingEnabled: false
         )
-        
-        // send all scanner's detected text to the Coordinator class
         scanner.delegate = context.coordinator
         context.coordinator.scanner = scanner
-        
-        // gesture recognizer to listen for user taps anywhere on the camera screen
+
+        let dimmer = UIView()
+        dimmer.tag = 888
+        dimmer.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        dimmer.isUserInteractionEnabled = false
+        dimmer.alpha = 0
+        dimmer.translatesAutoresizingMaskIntoConstraints = false
+        scanner.overlayContainerView.addSubview(dimmer)
+        NSLayoutConstraint.activate([
+            dimmer.topAnchor.constraint(equalTo: scanner.overlayContainerView.topAnchor),
+            dimmer.bottomAnchor.constraint(equalTo: scanner.overlayContainerView.bottomAnchor),
+            dimmer.leadingAnchor.constraint(equalTo: scanner.overlayContainerView.leadingAnchor),
+            dimmer.trailingAnchor.constraint(equalTo: scanner.overlayContainerView.trailingAnchor),
+        ])
+        context.coordinator.dimmerView = dimmer
+
         let tap = UITapGestureRecognizer(
             target: context.coordinator,
             action: #selector(Coordinator.handleTap(_:))
         )
         scanner.view.addGestureRecognizer(tap)
-        
         try? scanner.startScanning()
         return scanner
     }
-    
-    // if SwiftUI state changes
-    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {}
-    
-        func makeCoordinator() -> Coordinator {
-            Coordinator(onDishTapped: onDishTapped)
+
+    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
+        let c = context.coordinator
+
+        c.topInset    = topInset
+        c.bottomInset = bottomInset
+
+        let h = uiViewController.view.bounds.height
+        guard h > 0 else { return }
+
+        guard !c.hasSetROI else { return }
+
+        uiViewController.regionOfInterest = CGRect(
+            x: 0,
+            y: topInset / h,
+            width: 1.0,
+            height: (h - topInset - bottomInset) / h
+        )
+        c.hasSetROI = true
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDishTapped: onDishTapped) }
+
+    class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        var onDishTapped: (DishItem) -> Void
+        weak var scanner: DataScannerViewController?
+        weak var dimmerView: UIView?
+
+        var topInset:    CGFloat = 0
+        var bottomInset: CGFloat = 0
+
+        var currentDishes: [DishItem] = []
+        var hasSetROI = false
+        private var lastRenderTime: Date = .distantPast
+
+        private var stableFrames: [String: CGRect] = [:]
+        private let positionThreshold: CGFloat = 10
+
+        init(onDishTapped: @escaping (DishItem) -> Void) {
+            self.onDishTapped = onDishTapped
         }
-        
-        // listens to the delegate callbacks from the UIKit scanner.
-        class Coordinator: NSObject, DataScannerViewControllerDelegate {
-            
-            var onDishTapped: (DishItem) -> Void
-            weak var scanner: DataScannerViewController?
-            var currentDishes: [DishItem] = [] // temporary memory
-            private var lastRenderTime: Date = .distantPast // how fast the boxes redraw
-            
-            init(onDishTapped: @escaping (DishItem) -> Void) {
-                self.onDishTapped = onDishTapped
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let scanner = scanner else { return }
+            let tapPoint = gesture.location(in: scanner.overlayContainerView)
+            if let tapped = currentDishes.first(where: { $0.frame.contains(tapPoint) }) {
+                DispatchQueue.main.async { self.onDishTapped(tapped) }
             }
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController,
+                         didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            throttledRender(allItems, in: dataScanner)
+        }
+        func dataScanner(_ dataScanner: DataScannerViewController,
+                         didUpdate updatedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            throttledRender(allItems, in: dataScanner)
+        }
+        func dataScanner(_ dataScanner: DataScannerViewController,
+                         didRemove removedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            throttledRender(allItems, in: dataScanner)
+        }
+
+        func throttledRender(_ items: [RecognizedItem], in scanner: DataScannerViewController) {
+            let now = Date()
+            guard now.timeIntervalSince(lastRenderTime) > 0.6 else { return }
+            lastRenderTime = now
+            renderOverlays(for: items, in: scanner)
+        }
+
+        func renderOverlays(for items: [RecognizedItem], in scanner: DataScannerViewController) {
+            var newDishes: [DishItem] = []
             
-            // every time the user taps the screen
-            @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-                guard let scanner = scanner else { return }
-                
-                // exact X/Y coordinate of the finger tap
-                let tapPoint = gesture.location(in: scanner.overlayContainerView)
-                
-                // Loops through our known 'currentDishes'. If the finger tap falls inside
-                // the CGRect frame of a dish, we have a match!
-                if let tapped = currentDishes.first(where: { $0.frame.contains(tapPoint) }) {
-                    print("✅ Tapped: \(tapped.name)")
-                    // Move back to the main UI thread to trigger the navigation
-                    DispatchQueue.main.async {
-                        self.onDishTapped(tapped)
+            var nextStableFrames: [String: CGRect] = [:]
+
+            for item in items {
+                guard case .text(let text) = item else { continue }
+
+                let bounds = text.bounds
+                let minX = min(bounds.topLeft.x, bounds.bottomLeft.x)
+                let maxX = max(bounds.topRight.x, bounds.bottomRight.x)
+                let minY = min(bounds.topLeft.y, bounds.topRight.y)
+                let maxY = max(bounds.bottomLeft.y, bounds.bottomRight.y)
+                let blobFrame = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+
+                let lines = text.transcript
+                    .components(separatedBy: "\n")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { isValidDishName($0) }
+
+                guard !lines.isEmpty else { continue }
+
+                let lineHeight = blobFrame.height / CGFloat(lines.count)
+
+                for (index, dishName) in lines.enumerated() {
+                    let rawFrame = CGRect(
+                        x: blobFrame.origin.x,
+                        y: blobFrame.origin.y + (lineHeight * CGFloat(index)),
+                        width: blobFrame.width,
+                        height: lineHeight - 2
+                    )
+
+                    let viewHeight = scanner.overlayContainerView.bounds.height
+                    let bottomBoundary = viewHeight - bottomInset
+                    guard rawFrame.minY >= topInset && rawFrame.maxY <= bottomBoundary else { continue }
+
+                    let stableFrame: CGRect
+                    if let prev = stableFrames[dishName],
+                       abs(rawFrame.origin.x - prev.origin.x) < positionThreshold,
+                       abs(rawFrame.origin.y - prev.origin.y) < positionThreshold {
+                        stableFrame = prev
+                    } else {
+                        stableFrame = rawFrame
                     }
-                } else {
-                    print("❌ Tap at \(tapPoint) — no dish found")
+
+                    nextStableFrames[dishName] = stableFrame
+
+                    let category = stableCategory(for: dishName)
+                    
+                    let horizontalMargin: CGFloat = 20
+                    let viewWidth = scanner.overlayContainerView.bounds.width
+                    
+                    let uniformFrame = CGRect(
+                        x: horizontalMargin,
+                        y: stableFrame.minY,
+                        width: viewWidth - (horizontalMargin * 2),
+                        height: stableFrame.height
+                    )
+                    
+                    newDishes.append(DishItem(name: dishName, frame: uniformFrame, category: category))
                 }
             }
-            
-            // callback: VisionKit found new text
-            func dataScanner(_ dataScanner: DataScannerViewController,
-                             didAdd addedItems: [RecognizedItem],
-                             allItems: [RecognizedItem]) {
-                throttledRender(allItems, in: dataScanner)
-            }
-            
-            // callback: VisionKit updated the position of text it was tracking
-            func dataScanner(_ dataScanner: DataScannerViewController,
-                             didUpdate updatedItems: [RecognizedItem],
-                             allItems: [RecognizedItem]) {
-                
-                // clear boxes
-                if allItems.isEmpty {
-                    DispatchQueue.main.async {
-                        dataScanner.overlayContainerView.subviews.forEach { $0.removeFromSuperview() }
-                        self.currentDishes = []
-                    }
-                    return
+
+            stableFrames = nextStableFrames
+
+            DispatchQueue.main.async {
+                self.currentDishes = newDishes
+
+                scanner.overlayContainerView.subviews.forEach { view in
+                    if view.tag != 888 { view.removeFromSuperview() }
                 }
-                throttledRender(allItems, in: dataScanner)
-            }
-            
-            // VisionKit updates 60 times a second. This draws every 0.3 seconds.
-            func throttledRender(_ items: [RecognizedItem], in scanner: DataScannerViewController) {
-                let now = Date()
-                guard now.timeIntervalSince(lastRenderTime) > 0.3 else { return }
-                lastRenderTime = now
-                renderOverlays(for: items, in: scanner)
-            }
-            
-            // raw VisionKit text blocks into drawn UI boxes
-            func renderOverlays(for items: [RecognizedItem], in scanner: DataScannerViewController) {
-                var newDishes: [DishItem] = []
-                
-                for item in items {
-                    // text only
-                    guard case .text(let text) = item else { continue }
-                    
-                    // outer perimeter of the detected text block
-                    let bounds = text.bounds
-                    let minX = min(bounds.topLeft.x, bounds.bottomLeft.x)
-                    let maxX = max(bounds.topRight.x, bounds.bottomRight.x)
-                    let minY = min(bounds.topLeft.y, bounds.topRight.y)
-                    let maxY = max(bounds.bottomLeft.y, bounds.bottomRight.y)
-                    let blobFrame = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                    
-                    // splitting paragraphs into lines and filtering out bad data
-                    let lines = text.transcript
-                        .components(separatedBy: "\n")
-                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                        .filter { isValidDishName($0) }
-                    
-                    guard !lines.isEmpty else { continue }
-                    
-                    // divide the big bounding box = smaller horizontal slices based on the number of lines
-                    let lineHeight = blobFrame.height / CGFloat(lines.count)
-                    
-                    for (index, dishName) in lines.enumerated() {
-                        let lineFrame = CGRect(
-                            x: blobFrame.origin.x,
-                            y: blobFrame.origin.y + (lineHeight * CGFloat(index)),
-                            width: blobFrame.width,
-                            height: lineHeight - 2
-                        )
-                        
-                        let category = stableCategory(for: dishName)
-                        newDishes.append(DishItem(name: dishName, frame: lineFrame, category: category))
-                    }
+
+                for dish in newDishes {
+                    self.addPill(for: dish, in: scanner.overlayContainerView)
                 }
-                
-                // Drawing UI MUST happen on the Main Thread, or the app will crash
-                DispatchQueue.main.async {
-                    self.currentDishes = newDishes
-                    
-                    // clear out prev boxes
-                    scanner.overlayContainerView.subviews.forEach { $0.removeFromSuperview() }
-                    
-                    // to draw over the camera
-                    for dish in newDishes {
-                        let box = UIView(frame: dish.frame)
-                        box.layer.borderColor = dish.category.uiColor.cgColor
-                        box.layer.borderWidth = 2.0
-                        box.layer.cornerRadius = 4
-                        // no more physically blocking the tap gesture underneath it
-                        box.isUserInteractionEnabled = false
-                        
-                        let textLabel = UILabel(frame: box.bounds)
-                        textLabel.text = dish.name
-                        textLabel.textColor = .white
-                        textLabel.font = UIFont.boldSystemFont(ofSize: 14)
-                        textLabel.textAlignment = .center
-                        textLabel.adjustsFontSizeToFitWidth = true // automatically shrinks long text to fit the box
-                        
-                        textLabel.backgroundColor = dish.category.uiColor.withAlphaComponent(0.85)
-                        textLabel.layer.cornerRadius = 2
-                        textLabel.clipsToBounds = true
-                        
-                        box.addSubview(textLabel) // put the text inside the box
-                        scanner.overlayContainerView.addSubview(box) // put the box on the screen
-                    }
+
+                let hasDishes = !newDishes.isEmpty
+                UIView.animate(withDuration: 0.3) {
+                    self.dimmerView?.alpha = hasDishes ? 1 : 0
                 }
             }
-            
-            func stableCategory(for name: String) -> DishCategory {
-                let allCategories: [DishCategory] = [.safe, .recommended, .caution, .unsafe]
-                let index = abs(name.hashValue) % allCategories.count
-                return allCategories[index]
-            }
-            
-            func isValidDishName(_ text: String) -> Bool {
-                let t = text.trimmingCharacters(in: .whitespaces)
-                if t.count < 4 { return false } // short random letters
-                if t.contains("Rp") { return false } // prices
-                if t.contains("@") { return false } // social media handles
-                if t.contains("http") { return false } // websites
-                if t.hasPrefix("*") { return false } // footnotes
-                if t.lowercased().contains("email") { return false }
-                if t.lowercased().contains("instagram") { return false }
-                if t.lowercased().contains("alamat") { return false } // addresses
-                if t.contains(":") { return false } // time or ratios
-                if t.first?.isNumber == true { return false } // quantities like "1. Nasi"
-                if t.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," }) { return false } // pure numbers
-                return true
-            }
+        }
+
+        private func addPill(for dish: DishItem, in container: UIView) {
+            let lineH    = dish.frame.height
+            let fontSize = min(max(lineH * 0.42, 10), 19)
+            let iconSize = min(max(lineH * 0.46, 11), 20)
+            let cornerR: CGFloat = min(lineH * 0.38, 12)
+            let accentW: CGFloat = 4
+
+            let pill = UIView(frame: dish.frame)
+            pill.layer.cornerRadius = cornerR
+            pill.layer.cornerCurve  = .continuous
+            pill.clipsToBounds      = true
+            pill.isUserInteractionEnabled = false
+
+            let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+            let blurView   = UIVisualEffectView(effect: blurEffect)
+            blurView.frame = pill.bounds
+            blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            pill.addSubview(blurView)
+
+            let tintView = UIView(frame: pill.bounds)
+            tintView.backgroundColor = dish.category.uiColor.withAlphaComponent(0.42)
+            tintView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            pill.addSubview(tintView)
+
+            let accentBar = UIView(frame: CGRect(x: 0, y: 0, width: accentW, height: pill.bounds.height))
+            accentBar.backgroundColor = dish.category.uiColor
+            accentBar.autoresizingMask = [.flexibleHeight]
+            pill.addSubview(accentBar)
+
+            let textLabel = UILabel()
+            textLabel.text          = dish.name
+            textLabel.textColor     = .white
+            textLabel.font          = .sfRounded(size: fontSize, weight: .semibold)
+            textLabel.textAlignment = .left
+            textLabel.adjustsFontSizeToFitWidth = true
+            textLabel.minimumScaleFactor = 0.75
+            textLabel.translatesAutoresizingMaskIntoConstraints = false
+
+            let iconConfig = UIImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
+            let iconView   = UIImageView()
+            iconView.image       = UIImage(systemName: dish.category.iconName, withConfiguration: iconConfig)
+            iconView.tintColor   = .white
+            iconView.contentMode = .scaleAspectFit
+            iconView.translatesAutoresizingMaskIntoConstraints = false
+
+            pill.addSubview(textLabel)
+            pill.addSubview(iconView)
+
+            NSLayoutConstraint.activate([
+                textLabel.leadingAnchor.constraint(equalTo: pill.leadingAnchor, constant: accentW + 8),
+                textLabel.centerYAnchor.constraint(equalTo: pill.centerYAnchor),
+                textLabel.trailingAnchor.constraint(equalTo: iconView.leadingAnchor, constant: -6),
+
+                iconView.trailingAnchor.constraint(equalTo: pill.trailingAnchor, constant: -8),
+                iconView.centerYAnchor.constraint(equalTo: pill.centerYAnchor),
+                iconView.widthAnchor.constraint(equalToConstant: iconSize),
+                iconView.heightAnchor.constraint(equalToConstant: iconSize),
+            ])
+
+            container.addSubview(pill)
+        }
+
+        func stableCategory(for name: String) -> DishCategory {
+            let all: [DishCategory] = [.safe, .recommended, .caution, .unsafe]
+            return all[abs(name.hashValue) % all.count]
+        }
+
+        func isValidDishName(_ text: String) -> Bool {
+            let t = text.trimmingCharacters(in: .whitespaces)
+            if t.count < 4 { return false }
+            if t.contains("Rp") { return false }
+            if t.contains("@") { return false }
+            if t.contains("http") { return false }
+            if t.hasPrefix("*") { return false }
+            if t.lowercased().contains("email") { return false }
+            if t.lowercased().contains("instagram") { return false }
+            if t.lowercased().contains("alamat") { return false }
+            if t.contains(":") { return false }
+            if t.first?.isNumber == true { return false }
+            if t.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," }) { return false }
+            if t == t.uppercased() && t.contains(" ") { return false }
+            return true
         }
     }
+}
