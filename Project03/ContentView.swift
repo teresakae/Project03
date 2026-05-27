@@ -1,24 +1,36 @@
 import SwiftUI
 import VisionKit
+import Translation
 
 private let kTopBarHeight:    CGFloat = 125
 private let kBottomBarHeight: CGFloat = 200
+
+enum TranslationError: Error {
+    case noSession
+}
 
 struct ContentView: View {
     @State private var isScannerSupported  = false
     @State private var tappedDish: DishItem? = nil
     @State private var showInfo            = false
     @State private var showLanguage        = false
-    
+    @State private var translationConfig: TranslationSession.Configuration? = nil
+    @State private var translationSession: TranslationSession? = nil
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                
+
                 if isScannerSupported {
                     ScannerView(
                         topInset:    kTopBarHeight,
                         bottomInset: kBottomBarHeight,
-                        onDishTapped: { tappedDish = $0 }
+                        onDishTapped: { tappedDish = $0 },
+                        translate: { text in
+                            try await translationSession?.translations(
+                                from: [TranslationSession.Request(sourceText: text)]
+                            ).first?.targetText ?? text
+                        }
                     )
                     .ignoresSafeArea()
                 } else {
@@ -26,7 +38,7 @@ struct ContentView: View {
                     Text("Camera not supported on this device")
                         .foregroundColor(.white)
                 }
-                
+
                 VStack {
                     HStack {
                         Text("Fdoo")
@@ -50,15 +62,22 @@ struct ContentView: View {
                     )
                     Spacer()
                 }
-                
+
                 VStack(spacing: 0) {
                     Button(action: { showLanguage = true }) {
                         languagePickerPill
                     }
-                    
                     shutterRow
                 }
                 .background(Color.clear)
+            }
+            .translationTask(translationConfig) { session in
+                self.translationSession = session
+                do {
+                    try await session.prepareTranslation()
+                } catch {
+                    print("Translation prep failed: \(error)")
+                }
             }
             .navigationDestination(item: $tappedDish) { dish in
                 DishCardView(dish: dish)
@@ -86,10 +105,14 @@ struct ContentView: View {
         }
         .onAppear {
             isScannerSupported = DataScannerViewController.isSupported
-            && DataScannerViewController.isAvailable
+                && DataScannerViewController.isAvailable
+
+            translationConfig = TranslationSession.Configuration(
+                source: Locale.Language(languageCode: .indonesian),
+                target: Locale.Language(languageCode: .english)
+            )
         }
     }
-    
     private var languagePickerPill: some View {
         HStack(spacing: 6) {
             Image(systemName: "sparkle").font(.caption)
@@ -128,7 +151,7 @@ struct ContentView: View {
 
 struct LiquidGlassShutter: View {
     @State private var pressed = false
-    
+
     var body: some View {
         ZStack {
             Circle()
@@ -136,7 +159,6 @@ struct LiquidGlassShutter: View {
                 .overlay(Circle().strokeBorder(.white.opacity(0.88), lineWidth: 3.5))
                 .frame(width: 84, height: 84)
                 .shadow(color: .white.opacity(0.18), radius: 8)
-                
             Circle()
                 .fill(.white)
                 .frame(width: 64, height: 64)
@@ -150,18 +172,17 @@ struct LiquidGlassShutter: View {
         )
     }
 }
-    
+
 struct InfoButton: View {
     var action: () -> Void
     @State private var pressed = false
-    
+
     var body: some View {
         ZStack {
             Circle()
                 .fill(.ultraThinMaterial)
                 .overlay(Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1.5))
                 .frame(width: 54, height: 54)
-                
             Image(systemName: "info.circle")
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(.white)
@@ -178,10 +199,10 @@ struct InfoButton: View {
         )
     }
 }
-    
+
 struct DishCardView: View {
     let dish: DishItem
-    
+
     var body: some View {
         dish.category.color
             .ignoresSafeArea()
@@ -189,7 +210,7 @@ struct DishCardView: View {
             .navigationBarTitleDisplayMode(.inline)
     }
 }
-    
+
 struct PreferencesView: View {
     var body: some View {
         Text("Preference Settings")
@@ -198,21 +219,25 @@ struct PreferencesView: View {
             .navigationTitle("Preferences")
     }
 }
-    
+
 struct InfoPageView: View {
     var body: some View {
-        Color.clear
-            .navigationTitle("How to Say")
-            .navigationBarTitleDisplayMode(.inline)
-        Text("Info Screen")
+        ZStack {
+            Color.clear
+            Text("Info Screen")
+        }
+        .navigationTitle("How to Say")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
-    
+
 struct LanguageView: View {
     var body: some View {
-        Color.clear
-            .navigationTitle("Language Picker")
-            .navigationBarTitleDisplayMode(.inline)
-        Text("Language Picker")
+        ZStack {
+            Color.clear
+            Text("Language Picker")
+        }
+        .navigationTitle("Language Picker")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
