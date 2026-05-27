@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MenuTestApp: App {
+struct FdooApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()

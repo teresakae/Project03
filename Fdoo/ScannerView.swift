@@ -273,6 +273,11 @@ struct ScannerView: UIViewControllerRepresentable {
                 }
                 self.currentDishes  = newDishes
                 self.stableFrames   = nextStableFrames
+                
+                let hasDishes = !newDishes.isEmpty
+                    UIView.animate(withDuration: 0.3) {
+                        self.dimmerView?.alpha = hasDishes ? 1 : 0
+                    }
             }
         }
 

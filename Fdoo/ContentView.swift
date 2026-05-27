@@ -2,12 +2,8 @@ import SwiftUI
 import VisionKit
 import Translation
 
-private let kTopBarHeight:    CGFloat = 125
-private let kBottomBarHeight: CGFloat = 200
-
-enum TranslationError: Error {
-    case noSession
-}
+private let TopBarHeight:    CGFloat = 125
+private let BottomBarHeight: CGFloat = 200
 
 struct ContentView: View {
     @State private var isScannerSupported  = false
@@ -23,8 +19,8 @@ struct ContentView: View {
 
                 if isScannerSupported {
                     ScannerView(
-                        topInset:    kTopBarHeight,
-                        bottomInset: kBottomBarHeight,
+                        topInset:    TopBarHeight,
+                        bottomInset: BottomBarHeight,
                         onDishTapped: { tappedDish = $0 },
                         translate: { text in
                             try await translationSession?.translations(
@@ -83,24 +79,20 @@ struct ContentView: View {
                 DishCardView(dish: dish)
             }
             .sheet(isPresented: $showInfo) {
-                NavigationStack {
-                    InfoPageView()
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { showInfo = false }
-                            }
+                InfoPageView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showInfo = false }
                         }
-                }
+                    }
             }
             .sheet(isPresented: $showLanguage) {
-                NavigationStack {
-                    LanguageView()
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { showLanguage = false }
-                            }
+                LanguageView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showLanguage = false }
                         }
-                }
+                    }
             }
         }
         .onAppear {
