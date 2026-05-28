@@ -76,7 +76,7 @@ struct ContentView: View {
                 }
             }
             .navigationDestination(item: $tappedDish) { dish in
-                DishCardView(dish: dish)
+                DetailView(dish: dish)
             }
             .sheet(isPresented: $showInfo) {
                 TranslateView()
