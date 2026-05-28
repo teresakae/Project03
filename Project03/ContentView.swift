@@ -5,6 +5,15 @@
 //  Created by Teresa Kae on 24/05/26.
 //
 
+/// Use to show state of dish
+enum DishLevel: String
+{
+    case recommended
+    case caution
+    case safe
+    case notSafe
+}
+
 import SwiftUI
 import VisionKit
 
