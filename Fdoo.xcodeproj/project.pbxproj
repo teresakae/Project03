@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		13E7657B2FC2098C00A70D5D /* Project03.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Project03.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13E7657B2FC2098C00A70D5D /* Fdoo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fdoo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		13E7657D2FC2098C00A70D5D /* Project03 */ = {
+		13E7657D2FC2098C00A70D5D /* Fdoo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Project03;
+			path = Fdoo;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		13E765722FC2098C00A70D5D = {
 			isa = PBXGroup;
 			children = (
-				13E7657D2FC2098C00A70D5D /* Project03 */,
+				13E7657D2FC2098C00A70D5D /* Fdoo */,
 				13E7657C2FC2098C00A70D5D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 		13E7657C2FC2098C00A70D5D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13E7657B2FC2098C00A70D5D /* Project03.app */,
+				13E7657B2FC2098C00A70D5D /* Fdoo.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13E7657A2FC2098C00A70D5D /* Project03 */ = {
+		13E7657A2FC2098C00A70D5D /* Fdoo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13E765862FC2098D00A70D5D /* Build configuration list for PBXNativeTarget "Project03" */;
+			buildConfigurationList = 13E765862FC2098D00A70D5D /* Build configuration list for PBXNativeTarget "Fdoo" */;
 			buildPhases = (
 				13E765772FC2098C00A70D5D /* Sources */,
 				13E765782FC2098C00A70D5D /* Frameworks */,
@@ -61,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				13E7657D2FC2098C00A70D5D /* Project03 */,
+				13E7657D2FC2098C00A70D5D /* Fdoo */,
 			);
-			name = Project03;
+			name = Fdoo;
 			packageProductDependencies = (
 			);
 			productName = MenuTest;
-			productReference = 13E7657B2FC2098C00A70D5D /* Project03.app */;
+			productReference = 13E7657B2FC2098C00A70D5D /* Fdoo.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 13E765762FC2098C00A70D5D /* Build configuration list for PBXProject "Project03" */;
+			buildConfigurationList = 13E765762FC2098C00A70D5D /* Build configuration list for PBXProject "Fdoo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -99,7 +99,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13E7657A2FC2098C00A70D5D /* Project03 */,
+				13E7657A2FC2098C00A70D5D /* Fdoo */,
 			);
 		};
 /* End PBXProject section */
@@ -315,7 +315,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13E765762FC2098C00A70D5D /* Build configuration list for PBXProject "Project03" */ = {
+		13E765762FC2098C00A70D5D /* Build configuration list for PBXProject "Fdoo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13E765842FC2098D00A70D5D /* Debug */,
@@ -324,7 +324,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		13E765862FC2098D00A70D5D /* Build configuration list for PBXNativeTarget "Project03" */ = {
+		13E765862FC2098D00A70D5D /* Build configuration list for PBXNativeTarget "Fdoo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13E765872FC2098D00A70D5D /* Debug */,

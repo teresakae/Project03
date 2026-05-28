@@ -1,10 +1,3 @@
-//
-//  DetailView.swift
-//  MenuTest
-//
-//  Created by Brent Deverman on 5/26/26.
-//
-
 import SwiftUI
 
 struct DetailView: View {
