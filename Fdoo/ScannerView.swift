@@ -2,7 +2,7 @@ import SwiftUI
 import VisionKit
 import Translation
 
-enum DishCategory {
+enum DishCategory: CaseIterable {
     case safe, recommended, caution, unsafe
 
     var color: Color {
