@@ -5,15 +5,6 @@
 //  Created by Teresa Kae on 24/05/26.
 //
 
-/// Use to show state of dish
-enum DishLevel: String
-{
-    case recommended
-    case caution
-    case safe
-    case notSafe
-}
-
 import SwiftUI
 import VisionKit
 
@@ -41,7 +32,7 @@ struct ContentView: View {
                             .font(.title2.bold())
                             .foregroundColor(.white)
                         Spacer()
-                        
+
                         NavigationLink(destination: PreferencesView()) {
                             Image(systemName: "person.circle")
                                 .font(.title2)
@@ -81,12 +72,13 @@ struct ContentView: View {
                 }
             }
             .navigationDestination(item: $tappedDish) { dish in
-                DishCardView(dish: dish)
+                DetailView(dish: dish)
             }
         }
         .onAppear {
-            isScannerSupported = DataScannerViewController.isSupported
-                                 && DataScannerViewController.isAvailable
+            isScannerSupported =
+                DataScannerViewController.isSupported
+                && DataScannerViewController.isAvailable
         }
     }
 }
@@ -98,7 +90,7 @@ struct DishCardView: View {
     var body: some View {
         VStack(spacing: 24) {
             HStack {
-                Image(systemName: dish.category.iconName) // for Differentiate without color
+                Image(systemName: dish.category.iconName)  // for Differentiate without color
                 Text(dish.category.label)
             }
             .font(.caption.bold())

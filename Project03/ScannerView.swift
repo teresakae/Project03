@@ -8,7 +8,7 @@
 import SwiftUI
 import VisionKit
 
-enum DishCategory {
+enum DishCategory: CaseIterable {
     case safe, recommended, caution, unsafe
     // SwiftUI (in ContentView)
     var color: Color {
