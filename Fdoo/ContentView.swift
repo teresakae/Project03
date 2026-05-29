@@ -194,7 +194,7 @@ struct InfoButton: View {
                     Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1.5)
                 )
                 .frame(width: 54, height: 54)
-            Image(systemName: "info.circle")
+            Image(systemName: "person.wave.2.fill")
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(.white)
         }
