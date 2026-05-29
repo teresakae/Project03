@@ -1,16 +1,17 @@
 import SwiftUI
-import VisionKit
 import Translation
+import VisionKit
 
-private let TopBarHeight:    CGFloat = 125
+private let TopBarHeight: CGFloat = 125
 private let BottomBarHeight: CGFloat = 200
 
 struct ContentView: View {
-    @State private var isScannerSupported  = false
+    @State private var isScannerSupported = false
     @State private var tappedDish: DishItem? = nil
-    @State private var showInfo            = false
-    @State private var showLanguage        = false
-    @State private var translationConfig: TranslationSession.Configuration? = nil
+    @State private var showInfo = false
+    @State private var showLanguage = false
+    @State private var translationConfig: TranslationSession.Configuration? =
+        nil
     @State private var translationSession: TranslationSession? = nil
 
     var body: some View {
@@ -19,12 +20,14 @@ struct ContentView: View {
 
                 if isScannerSupported {
                     ScannerView(
-                        topInset:    TopBarHeight,
+                        topInset: TopBarHeight,
                         bottomInset: BottomBarHeight,
                         onDishTapped: { tappedDish = $0 },
                         translate: { text in
                             try await translationSession?.translations(
-                                from: [TranslationSession.Request(sourceText: text)]
+                                from: [
+                                    TranslationSession.Request(sourceText: text)
+                                ]
                             ).first?.targetText ?? text
                         }
                     )
@@ -52,7 +55,8 @@ struct ContentView: View {
                     .background(
                         LinearGradient(
                             colors: [.black.opacity(0.72), .clear],
-                            startPoint: .top, endPoint: .bottom
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                         .ignoresSafeArea(edges: .top)
                     )
@@ -75,9 +79,15 @@ struct ContentView: View {
                     print("Translation prep failed: \(error)")
                 }
             }
-            .navigationDestination(item: $tappedDish) { dish in
+            .sheet(item: $tappedDish) { dish in
                 DetailView(dish: dish)
+
             }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.ultraThinMaterial)
+
+
             .sheet(isPresented: $showInfo) {
                 TranslateView()
                     .toolbar {
@@ -86,7 +96,7 @@ struct ContentView: View {
                         }
                     }
             }
-            
+
             .sheet(isPresented: $showLanguage) {
                 LanguageView()
                     .toolbar {
@@ -97,7 +107,8 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            isScannerSupported = DataScannerViewController.isSupported
+            isScannerSupported =
+                DataScannerViewController.isSupported
                 && DataScannerViewController.isAvailable
 
             translationConfig = TranslationSession.Configuration(
@@ -124,7 +135,7 @@ struct ContentView: View {
 
     private var shutterRow: some View {
         ZStack(alignment: .center) {
-            Button(action: { }) {
+            Button(action: {}) {
                 LiquidGlassShutter()
             }
             .frame(width: 84, height: 84)
@@ -149,7 +160,9 @@ struct LiquidGlassShutter: View {
         ZStack {
             Circle()
                 .fill(.ultraThinMaterial)
-                .overlay(Circle().strokeBorder(.white.opacity(0.88), lineWidth: 3.5))
+                .overlay(
+                    Circle().strokeBorder(.white.opacity(0.88), lineWidth: 3.5)
+                )
                 .frame(width: 84, height: 84)
                 .shadow(color: .white.opacity(0.18), radius: 8)
             Circle()
@@ -157,11 +170,14 @@ struct LiquidGlassShutter: View {
                 .frame(width: 64, height: 64)
         }
         .scaleEffect(pressed ? 0.90 : 1.0)
-        .animation(.spring(response: 0.20, dampingFraction: 0.55), value: pressed)
+        .animation(
+            .spring(response: 0.20, dampingFraction: 0.55),
+            value: pressed
+        )
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in pressed = true }
-                .onEnded   { _ in pressed = false }
+                .onEnded { _ in pressed = false }
         )
     }
 }
@@ -174,18 +190,23 @@ struct InfoButton: View {
         ZStack {
             Circle()
                 .fill(.ultraThinMaterial)
-                .overlay(Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1.5))
+                .overlay(
+                    Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1.5)
+                )
                 .frame(width: 54, height: 54)
             Image(systemName: "info.circle")
                 .font(.system(size: 24, weight: .medium))
                 .foregroundStyle(.white)
         }
         .scaleEffect(pressed ? 0.88 : 1.0)
-        .animation(.spring(response: 0.20, dampingFraction: 0.55), value: pressed)
+        .animation(
+            .spring(response: 0.20, dampingFraction: 0.55),
+            value: pressed
+        )
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in pressed = true }
-                .onEnded   { _ in
+                .onEnded { _ in
                     pressed = false
                     action()
                 }
